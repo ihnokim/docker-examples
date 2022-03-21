@@ -1,0 +1,1 @@
+sudo docker run --name mysql$1 --restart always --env-file mysql$1/mysql$1.env -v /data/mysql$1/db:/var/lib/mysql -v /data/mysql$1/logs:/var/log/mysql -d -p 3306:3306 mysql:5.7 --explicit_defaults_for_timestamp=1 --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
