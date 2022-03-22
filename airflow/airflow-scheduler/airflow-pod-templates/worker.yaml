@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dummy-name
+spec:
+  containers:
+  - env:
+    - name: AIRFLOW__CORE__EXECUTOR
+      value: LocalExecutor
+    - name: AIRFLOW__CORE__SQL_ALCHEMY_CONN
+      value: "mysql+mysqldb://ihnokim:mysql@10.0.2.15:3306/airflow"
+    image: dummy_image
+    imagePullPolicy: IfNotPresent
+    name: base
+    volumeMounts:
+    - mountPath: /opt/airflow/logs
+      name: airflow-logs
+    - mountPath: /opt/airflow/dags
+      name: airflow-dags
+      readOnly: true
+  restartPolicy: Never
+  securityContext:
+    runAsUser: 50000
+    fsGroup: 50000
+  serviceAccountName: airflow-sa
+  volumes:
+  - name: airflow-logs
+    persistentVolumeClaim:
+      claimName: airflow-logs-pvc
+  - name: airflow-dags
+    persistentVolumeClaim:
+      claimName: airflow-dags-pvc
