@@ -1,0 +1,26 @@
+from datetime import datetime
+from airflow import DAG
+from airflow.operators.python_operator import PythonOperator
+
+
+def say_hello():
+    s = 'Hello!'
+    print(s)
+    return s
+
+
+def say_bye():
+    s = 'Bye!'
+    print(s)
+    return s
+
+
+dag = DAG('hello_world', description='Hello World DAG',
+          schedule_interval='0 12 * * *',
+          start_date=datetime(2022, 3, 20), catchup=False)
+
+hello_operator = PythonOperator(task_id='hello_task', python_callable=say_hello, dag=dag)
+bye_operator = PythonOperator(task_id='bye_task', python_callable=say_bye, dag=dag)
+
+
+hello_operator >> bye_operator
