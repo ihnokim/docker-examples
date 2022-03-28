@@ -1,0 +1,64 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: airflow-webserver
+  namespace: airflow
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      tier: airflow
+      component: webserver
+  template:
+    metadata:
+      labels:
+        tier: airflow
+        component: webserver
+      annotations:
+        cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: deploy
+                operator: In
+                values:
+                - etl
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 10
+      serviceAccountName: airflow-sa
+      containers:
+      - name: webserver
+        image: apache/airflow:2.2.2
+        imagePullPolicy: IfNotPresent
+        args: ["webserver", "-p", "8080"]
+        env:
+        - name: AIRFLOW__CORE__SQL_ALCHEMY_CONN
+          valueFrom:
+            secretKeyRef:
+              name: airflow-secret
+              key: AIRFLOW_MYSQL
+        - name: AIRFLOW__WEBSERVER__SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: airflow-secret
+              key: AIRFLOW__WEBSERVER__SECRET_KEY
+        - name: AIRFLOW__CORE__MIN_SERIALIZED_DAG_FETCH_INTERVAL
+          valueFrom:
+            configMapKeyRef:
+              name: airflow-config
+              key: AIRFLOW__CORE__MIN_SERIALIZED_DAG_FETCH_INTERVAL
+        - name: AIRFLOW__CORE__MIN_SERIALIZED_DAG_UPDATE_INTERVAL
+          valueFrom:
+            configMapKeyRef:
+              name: airflow-config
+              key: AIRFLOW__CORE__MIN_SERIALIZED_DAG_UPDATE_INTERVAL
+        volumeMounts:
+        - mountPath: /opt/airflow/logs
+          name: airflow-logs
+      volumes:
+      - name: airflow-logs
+        persistentVolumeClaim:
+          claimName: airflow-logs-pvc
