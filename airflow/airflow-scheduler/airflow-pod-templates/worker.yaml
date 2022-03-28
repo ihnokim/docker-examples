@@ -3,13 +3,25 @@ kind: Pod
 metadata:
   name: dummy-name
 spec:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: deploy
+            operator: In
+            values:
+            - etl
   containers:
   - env:
     - name: AIRFLOW__CORE__EXECUTOR
       value: LocalExecutor
     - name: AIRFLOW__CORE__SQL_ALCHEMY_CONN
-      value: "mysql+mysqldb://ihnokim:mysql@10.0.2.15:3306/airflow"
-    image: dummy_image
+      valueFrom:
+        secretKeyRef:
+          name: airflow-secret
+          key: AIRFLOW_MYSQL
+    image: dummy-image
     imagePullPolicy: IfNotPresent
     name: base
     volumeMounts:

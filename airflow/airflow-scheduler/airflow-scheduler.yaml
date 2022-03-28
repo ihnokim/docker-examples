@@ -17,6 +17,15 @@ spec:
       annotations:
         cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
     spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: deploy
+                operator: In
+                values:
+                - etl
       restartPolicy: Always
       terminationGracePeriodSeconds: 10
       serviceAccountName: airflow-sa
@@ -25,33 +34,21 @@ spec:
         image: apache/airflow:2.2.2
         imagePullPolicy: IfNotPresent
         args: ["scheduler"]
+        envFrom:
+        - configMapRef:
+            name: airflow-config
         env:
-        - name: AIRFLOW__CORE__EXECUTOR
-          value: "KubernetesExecutor"
         - name: AIRFLOW__CORE__SQL_ALCHEMY_CONN
-          value: "mysql+mysqldb://ihnokim:mysql@10.0.2.15:3306/airflow"
-        - name: AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION
-          value: "true"
-        - name: AIRFLOW__CORE__LOAD_EXAMPLES
-          value: "false"
-        - name: AIRFLOW__KUBERNETES__NAMESPACE
-          value: airflow
+          valueFrom:
+            secretKeyRef:
+              name: airflow-secret
+              key: AIRFLOW_MYSQL
         - name: AIRFLOW__KUBERNETES__POD_TEMPLATE_FILE
           value: /opt/airflow/pod-templates/worker.yaml
-        - name: AIRFLOW__KUBERNETES__VERIFY_SSL
-          value: "false"
-        - name: AIRFLOW__KUBERNETES__IN_CLUSTER
-          value: "true"
         - name: AIRFLOW__KUBERNETES__WORKER_CONTAINER_REPOSITORY
           value: apache/airflow
         - name: AIRFLOW__KUBERNETES__WORKER_CONTAINER_TAG
           value: 2.2.2
-        - name: AIRFLOW__KUBERNETES__RUN_AS_USER
-          value: "50000"
-        - name: AIRFLOW__CORE__MIN_SERIALIZED_DAG_FETCH_INTERVAL
-          value: "10"
-        - name: AIRFLOW__CORE__MIN_SERIALIZED_DAG_UPDATE_INTERVAL
-          value: "30"
         volumeMounts:
         - mountPath: /opt/airflow/pod-templates
           name: airflow-pod-templates
@@ -59,6 +56,8 @@ spec:
           name: airflow-logs
         - mountPath: /opt/airflow/dags
           name: airflow-dags
+        - mountPath: /opt/airflow/plugins
+          name: airflow-plugins
       volumes:
       - name: airflow-pod-templates
         persistentVolumeClaim:
@@ -69,3 +68,6 @@ spec:
       - name: airflow-dags
         persistentVolumeClaim:
           claimName: airflow-dags-pvc
+      - name: airflow-plugins
+        persistentVolumeClaim:
+          claimName: airflow-plugins-pvc
