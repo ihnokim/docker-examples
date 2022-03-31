@@ -1,0 +1,55 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: spark-worker
+  namespace: spark
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      tier: spark
+      component: worker
+  template:
+    metadata:
+      labels:
+        tier: spark
+        component: worker
+      annotations:
+        cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: deploy
+                operator: In
+                values:
+                - etl
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 10
+      serviceAccountName: spark-sa
+      containers:
+      - name: spark-worker
+        image: bitnami/spark:3.2.1
+        imagePullPolicy: IfNotPresent
+        resources:
+          requests:
+            memory: "250Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        env:
+        - name: SPARK_MODE
+          value: worker
+        - name: SPARK_MASTER_URL
+          value: spark://spark-master-service.spark.svc.cluster.local:30077
+        - name: SPARK_SSL_NEED_CLIENT_AUTH
+          value: "no"
+        - name: SPARK_WORKER_WEBUI_PORT
+          value: "8081"
+        - name: SPARK_WORKER_MEMORY
+          value: "1g"
+        - name: SPARK_WORKER_CORES
+          value: "1"
