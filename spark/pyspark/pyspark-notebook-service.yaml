@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: spark-notebook-service
+  namespace: spark
+spec:
+  selector:
+    tier: spark
+    component: master
+  ports:
+  - protocol: TCP
+    port: 30088
+    targetPort: 8888
+    nodePort: 30088
+    name: notebook
+  type: LoadBalancer
+  loadBalancerIP: 10.0.2.5

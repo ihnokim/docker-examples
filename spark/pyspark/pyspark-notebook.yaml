@@ -1,0 +1,35 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: pyspark-notebook
+  namespace: spark
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      tier: spark
+      component: pyspark-notebook
+  template:
+    metadata:
+      labels:
+        tier: spark
+        component: pyspark-notebook
+      annotations:
+        cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: deploy
+                operator: In
+                values:
+                - etl
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 10
+      serviceAccountName: spark-sa
+      containers:
+      - name: pyspark-notebook
+        image: pyspark-notebook:3.8-slim
+        imagePullPolicy: IfNotPresent
