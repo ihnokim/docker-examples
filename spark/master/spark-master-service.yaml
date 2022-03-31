@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: spark-webserver-service
+  namespace: spark
+spec:
+  selector:
+    tier: spark
+    component: master
+  ports:
+  - protocol: TCP
+    port: 30080
+    targetPort: 8080
+    nodePort: 30080
+    name: webui
+  - port: 30077
+    targetPort: 7077
+    nodePort: 30077
+    name: spark
+  type: LoadBalancer
+  loadBalancerIP: 10.0.2.3

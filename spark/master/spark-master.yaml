@@ -1,0 +1,46 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: spark-master
+  namespace: spark
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      tier: spark
+      component: master
+  template:
+    metadata:
+      labels:
+        tier: spark
+        component: master
+      annotations:
+        cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: deploy
+                operator: In
+                values:
+                - etl
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 10
+      serviceAccountName: spark-sa
+      containers:
+      - name: spark-master
+        image: bitnami/spark:3.2.1
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: SPARK_MODE
+          value: master
+        - name: SPARK_MASTER_HOST
+          value: 0.0.0.0
+        - name: SPARK_MASTER_PORT
+          value: "7077"
+        - name: SPARK_SSL_NEED_CLIENT_AUTH
+          value: "no"
+        - name: SPARK_MASTER_WEBUI_PORT
+          value: "8080"
