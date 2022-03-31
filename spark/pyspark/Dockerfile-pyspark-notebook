@@ -1,0 +1,19 @@
+FROM python:3.8-slim
+
+ENV PATH="/root/.local/bin:${PATH}"
+
+RUN apt-get update && apt-get -y upgrade
+RUN apt-get install -y vim openjdk-11-jre
+
+RUN mkdir -p /opt/pyspark-notebook
+WORKDIR /opt/pyspark-notebook
+
+RUN mkdir -p config
+RUN mkdir -p jupyter/notebook
+
+COPY config config
+
+RUN python -m pip install pip
+RUN python -m pip install pyspark jupyter
+
+ENTRYPOINT ["jupyter", "notebook", "--config", "/opt/pyspark-notebook/config/jupyter_notebook_config.py"]
