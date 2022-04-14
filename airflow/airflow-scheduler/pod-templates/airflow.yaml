@@ -2,6 +2,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: dummy-name
+  namespace: airflow
 spec:
   affinity:
     nodeAffinity:
@@ -30,6 +31,8 @@ spec:
     - mountPath: /opt/airflow/dags
       name: airflow-dags
       readOnly: true
+    - mountPath: /opt/airflow/local
+      name: airflow-local
   restartPolicy: Never
   securityContext:
     runAsUser: 50000
@@ -42,3 +45,6 @@ spec:
   - name: airflow-dags
     persistentVolumeClaim:
       claimName: airflow-dags-pvc
+  - name: airflow-local
+    persistentVolumeClaim:
+      claimName: airflow-local-pvc
