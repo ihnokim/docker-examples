@@ -3,3 +3,5 @@
 /data/kubernetes/airflow-dags *(rw,fsid=2,async,no_subtree_check,no_auth_nlm,insecure,no_root_squash)
 /data/kubernetes/airflow-plugins *(rw,fsid=3,async,no_subtree_check,no_auth_nlm,insecure,no_root_squash)
 /data/kubernetes/airflow-local *(rw,fsid=4,async,no_subtree_check,no_auth_nlm,insecure,no_root_squash)
+/data/kubernetes/spark-pod-templates *(rw,fsid=5,async,no_subtree_check,no_auth_nlm,insecure,no_root_squash)
+/data/kubernetes/spark-local *(rw,fsid=6,async,no_subtree_check,no_auth_nlm,insecure,no_root_squash)

@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: spark-pod-templates-pv
+  namespace: spark
+  labels:
+    name: spark-pod-templates-pv
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+  - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  nfs:
+    server: 10.0.2.15
+    path: /data/kubernetes/spark-pod-templates
