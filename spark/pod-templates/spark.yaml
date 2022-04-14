@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dummy-name
+  namespace: spark
+spec:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: deploy
+            operator: In
+            values:
+            - etl
+  containers:
+  - image: dummy-image
+    imagePullPolicy: IfNotPresent
+    name: base
+    volumeMounts:
+    - mountPath: /opt/spark/local
+      name: spark-local
+    - mountPath: /opt/spark/pod-templates
+      name: spark-pod-templates
+  restartPolicy: Never
+  securityContext:
+    runAsUser: 185
+    fsGroup: 185
+  serviceAccountName: spark-sa
+  volumes:
+  - name: spark-local
+    persistentVolumeClaim:
+      claimName: spark-local-pvc
+  - name: spark-pod-templates
+    persistentVolumeClaim:
+      claimName: spark-pod-templates-pvc

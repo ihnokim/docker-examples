@@ -44,7 +44,7 @@ spec:
               name: airflow-secret
               key: AIRFLOW_MYSQL
         - name: AIRFLOW__KUBERNETES__POD_TEMPLATE_FILE
-          value: /opt/airflow/pod-templates/worker.yaml
+          value: /opt/airflow/pod-templates/airflow.yaml
         - name: AIRFLOW__KUBERNETES__WORKER_CONTAINER_REPOSITORY
           value: apache/airflow
         - name: AIRFLOW__KUBERNETES__WORKER_CONTAINER_TAG
