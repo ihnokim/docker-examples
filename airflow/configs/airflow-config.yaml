@@ -13,3 +13,4 @@ data:
   AIRFLOW__KUBERNETES__VERIFY_SSL: "false"
   AIRFLOW__KUBERNETES__IN_CLUSTER: "true"
   AIRFLOW__KUBERNETES__RUN_AS_USER: "50000"
+  AIRFLOW__API__AUTH_BACKEND: airflow.api.auth.backend.basic_auth

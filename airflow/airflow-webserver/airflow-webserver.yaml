@@ -55,6 +55,11 @@ spec:
             configMapKeyRef:
               name: airflow-config
               key: AIRFLOW__CORE__MIN_SERIALIZED_DAG_UPDATE_INTERVAL
+        - name: AIRFLOW__API__AUTH_BACKEND
+            valueFrom:
+              configMapKeyRef:
+                name: airflow-config
+                key: AIRFLOW__API__AUTH_BACKEND
         volumeMounts:
         - mountPath: /opt/airflow/logs
           name: airflow-logs
