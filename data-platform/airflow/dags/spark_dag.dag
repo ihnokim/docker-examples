@@ -1,0 +1,87 @@
+from datetime import datetime, timedelta
+from airflow import DAG
+from airflow.operators.python_operator import PythonOperator
+from airflow.providers.cncf.kubernetes.operators.kubernetes_pod import KubernetesPodOperator
+
+
+dag = DAG('spark_test', description='Simple spark example',
+          schedule_interval='0 12 * * *',
+          start_date=datetime(2022, 4, 28), catchup=False)
+
+
+def do_something_with_python():
+    tmp = 'Hello!'
+    print(tmp)
+    return tmp
+
+
+def upload_spark_results_to_s3(path):
+    import os
+    from codepack import Config
+    from codepack.interfaces import S3
+    from shutil import rmtree
+    config = Config()
+    s3_config = config.get_config('s3')
+    s3 = S3(s3_config)
+    fullpath = os.path.join('/opt/airflow/local-fs/spark/results', path)
+    for filename in os.listdir(fullpath):
+        _, ext = os.path.splitext(filename)
+        if ext == '.csv':
+            s3.upload_file(path=os.path.join(fullpath, filename),
+                           bucket='bucket', key='spark/results/%s/%s' % (path, filename))
+    s3.close()
+    rmtree(fullpath)
+
+
+do_something_with_python_task = PythonOperator(task_id='do_something_with_python_task',
+                                               python_callable=do_something_with_python, dag=dag)
+
+
+spark_submit_task = KubernetesPodOperator(
+    task_id='spark_submit_task',
+    name='airflow_and_spark_on_k8s',
+    namespace='data-platform',
+    image='MRDYESWAS1:5000/spark-py:3.2.1-s3',
+    arguments=['/opt/spark/bin/spark-submit',
+               '--master', 'k8s://https://10.166.232.166:6443',
+               '--deploy-mode', 'cluster',
+               '--name', 'spark-submit',
+               '--conf', 'spark.executor.instances=2',
+               '--conf', 'spark.kubernetes.driver.podTemplateFile=file:///opt/spark/pod-templates/spark.yaml',
+               '--conf', 'spark.kubernetes.executor.podTemplateFile=file:///opt/spark/pod-templates/spark.yaml',
+               '--conf', 'spark.kubernetes.container.image=ihnokim/spark-py:3.2.1-s3',
+               # '--conf', 'spark.kubernetes.authenticate.driver.serviceAccountName=data-engineer-sa',
+               # '--conf', 'spark.kubernetes.authenticate.executor.serviceAccountName=data-engineer-sa',
+               # '--conf', 'spark.kubernetes.namespace=data-platform',
+               '--conf', 'spark.kubernetes.driver.pod.name=spark-driver',
+               '--conf', 'spark.kubernetes.executor.podNamePrefix=spark-executor',
+               '--conf', 'spark.kubernetes.authenticate.submission.caCertFile=/opt/codepack/config/crt/apiserver.crt',
+               '--conf', 'spark.kubernetes.file.upload.path=file:///opt/spark/apps/submit',
+               '--conf', 'spark.kubernetes.authenticate.submission.oauthTokenFile='
+                         '/var/run/secrets/kubernetes.io/serviceaccount/token',
+               '/opt/spark/apps/s3-join-example.py'],
+    volume_mounts=None,
+    volumes=None,
+    annotations=None,
+    resources={'request_cpu': '1000m', 'request_memory': '2048Mi', 'limit_cpu': '2000m', 'limit_memory': '4096Mi'},
+    affinity=None,
+    hostnetwork=True,
+    in_cluster=True,
+    pod_template_file='/opt/airflow/pod-templates/spark.yaml',
+    is_delete_operator_pod=True,
+    startup_timeout_seconds=180,
+    execution_timeout=timedelta(minutes=120),
+    # retries=3,
+    retry_delay=timedelta(minutes=3),
+    # image_pull_policy='IfNotPresent',
+    # service_account_name='data-engineer-sa',
+    dag=dag)
+
+
+upload_spark_results_to_s3 = PythonOperator(task_id='upload_spark_results_to_s3_task',
+                                            python_callable=upload_spark_results_to_s3,
+                                            op_kwargs={'path': 'csv_join_example'},
+                                            dag=dag)
+
+
+do_something_with_python_task >> spark_submit_task >> upload_spark_results_to_s3

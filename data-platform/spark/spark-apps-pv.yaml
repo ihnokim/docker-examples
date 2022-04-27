@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: spark-apps-pv
+  namespace: data-platform
+  labels:
+    name: spark-apps-pv
+spec:
+  capacity:
+    storage: 20Gi
+  accessModes:
+  - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  nfs:
+    server: 10.0.2.15
+    path: /data/data-platform/nfs/spark/apps

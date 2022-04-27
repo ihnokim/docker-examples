@@ -1,0 +1,78 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: airflow-scheduler
+  namespace: data-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      tier: airflow
+      component: scheduler
+  template:
+    metadata:
+      labels:
+        tier: airflow
+        component: scheduler
+      annotations:
+        cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: deploy
+                operator: In
+                values:
+                - etl
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 10
+      serviceAccountName: data-engineer-sa
+      containers:
+      - name: scheduler
+        image: apache/airflow:2.2.2
+        imagePullPolicy: IfNotPresent
+        args: ["scheduler"]
+        envFrom:
+        - configMapRef:
+            name: airflow-config
+        env:
+        - name: AIRFLOW__CORE__SQL_ALCHEMY_CONN
+          valueFrom:
+            secretKeyRef:
+              name: airflow-secret
+              key: AIRFLOW_MYSQL
+        - name: AIRFLOW__KUBERNETES__POD_TEMPLATE_FILE
+          value: /opt/airflow/pod-templates/airflow.yaml
+        - name: AIRFLOW__KUBERNETES__WORKER_CONTAINER_REPOSITORY
+          value: apache/airflow
+        - name: AIRFLOW__KUBERNETES__WORKER_CONTAINER_TAG
+          value: 2.2.2
+        volumeMounts:
+        - mountPath: /opt/airflow/pod-templates
+          name: pod-templates
+        - mountPath: /opt/airflow/logs
+          name: airflow-logs
+        - mountPath: /opt/airflow/dags
+          name: airflow-dags
+        - mountPath: /opt/airflow/plugins
+          name: airflow-plugins
+        - mountPath: /opt/airflow/local-fs
+          name: local-fs
+      volumes:
+      - name: pod-templates
+        persistentVolumeClaim:
+          claimName: pod-templates-pvc
+      - name: airflow-logs
+        persistentVolumeClaim:
+          claimName: airflow-logs-pvc
+      - name: airflow-dags
+        persistentVolumeClaim:
+          claimName: airflow-dags-pvc
+      - name: airflow-plugins
+        persistentVolumeClaim:
+          claimName: airflow-plugins-pvc
+      - name: local-fs
+        persistentVolumeClaim:
+          claimName: local-fs-pvc
